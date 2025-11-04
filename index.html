@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WhatsApp iPhone - Simulasi Screenshot</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    :root{
+      --bg1: #0b3a2b; /* dark green */
+      --bg2: #1f2730; /* dark grey */
+      --bubble: rgba(20,22,25,0.92);
+      --text: #ffffff;
+      --muted: #b6b6b6;
+      --accent: #0abf7f;
+      --menu-bg: rgba(0,0,0,0.5);
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, var(--bg1), var(--bg2));
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      box-sizing:border-box;
+    }
+
+    .container{
+      width:100%;
+      max-width:420px;
+      min-height:680px;
+      position:relative;
+      border-radius:20px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+      overflow:hidden;
+      background: linear-gradient(160deg, rgba(6,30,22,0.45), rgba(18,20,22,0.55));
+      padding:18px;
+    }
+
+    /* top bar (search in screenshot) */
+    .top-search{
+      height:56px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 12px;
+      border-radius:14px;
+      background: rgba(255,255,255,0.03);
+      margin-bottom:12px;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .top-search .dot{
+      width:10px;height:10px;border-radius:50%;background:#2a2a2a;margin-right:6px;
+    }
+
+    /* phone view area */
+    .phone {
+      background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.24));
+      border-radius:16px;
+      padding:12px;
+      position:relative;
+      color:var(--text);
+      overflow:visible;
+    }
+
+    /* message area */
+    .message-row{
+      display:flex;
+      justify-content:flex-start;
+      gap:10px;
+      margin-top:36px;
+      align-items:flex-end;
+    }
+
+    .avatar{
+      width:38px;height:38px;border-radius:50%;
+      background:linear-gradient(135deg,#6b8b7f,#2f6b5a);
+      box-shadow: inset 0 -2px 6px rgba(0,0,0,0.25);
+      flex:0 0 38px;
+    }
+
+    .bubble{
+      background: var(--bubble);
+      border-radius:16px;
+      padding:12px;
+      min-width:160px;
+      max-width:260px;
+      position:relative;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    }
+
+    .bubble .time{
+      position:absolute;
+      right:12px;
+      bottom:8px;
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    /* reactions bar (top of screenshot) */
+    .reactions{
+      display:flex;
+      gap:8px;
+      background: rgba(255,255,255,0.02);
+      padding:8px;
+      border-radius:999px;
+      position:absolute;
+      left:10px;
+      top:-30px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.5);
+    }
+
+    .reactions .emoji{
+      font-size:20px;
+      width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+    }
+
+    /* long-press menu */
+    .menu{
+      margin-top:18px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.6));
+      border-radius:8px;
+      padding:8px 6px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+    }
+    .menu .opt{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 12px;
+      border-radius:8px;
+      color:var(--text);
+      font-size:15px;
+    }
+    .menu .opt + .opt{ margin-top:6px; }
+    .menu .opt .icon{ opacity:0.85; color:var(--muted); }
+
+    /* editable text area (the "Teks / Isi sendiri.") */
+    .editable {
+      color:var(--text);
+      outline:none;
+      white-space:pre-wrap;
+      word-break:break-word;
+      font-size:20px;
+      line-height:1.1;
+      min-height:36px;
+      max-height:220px;
+      overflow:auto;
+      padding-right:56px;
+      width:100%;
+      box-sizing:border-box;
+      cursor:grab;
+      -webkit-user-select:text;
+    }
+
+    .editable:active{ cursor:grabbing; }
+
+    /* controls */
+    .controls{
+      display:flex;
+      gap:8px;
+      margin-top:12px;
+      align-items:center;
+    }
+    .btn{
+      background:rgba(255,255,255,0.06);
+      padding:8px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      color:var(--text);
+      border:1px solid rgba(255,255,255,0.03);
+      font-weight:600;
+    }
+    .btn.primary{ background:linear-gradient(90deg,var(--accent),#06b07a); color:#022; border:none; }
+
+    .slider-wrap{ display:flex;align-items:center;gap:8px;color:var(--muted); font-size:13px; }
+    input[type=range]{ width:140px; }
+
+    /* iPhone-top-notification style */
+    .ios-notify{
+      position:fixed;
+      left:50%;
+      transform:translateX(-50%) translateY(-120%);
+      top:12px;
+      min-width:200px;
+      max-width:88%;
+      background: linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.75));
+      color:white;
+      padding:10px 14px;
+      border-radius:14px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+      transition: transform 400ms cubic-bezier(.2,.9,.2,1), opacity 200ms ease;
+      opacity:0;
+      z-index:9999;
+      text-align:center;
+      font-weight:600;
+    }
+    .ios-notify.show{
+      transform:translateX(-50%) translateY(0);
+      opacity:1;
+    }
+
+    /* footer helper */
+    .footer{
+      margin-top:16px;
+      color:var(--muted);
+      font-size:13px;
+      display:flex;justify-content:space-between;align-items:center;
+    }
+
+    /* helper for draggable bounding */
+    .drag-handle{
+      position:absolute;
+      left:8px; top:6px;
+      width:28px;height:28px;border-radius:6px;
+      background:rgba(255,255,255,0.03);
+      display:flex;align-items:center;justify-content:center;
+      font-size:12px;color:var(--muted);
+      cursor:grab;
+    }
+
+    /* small responsive */
+    @media (max-width:420px){
+      .container{ padding:10px; min-height:600px; }
+      .bubble{ max-width:220px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="app">
+    <div class="top-search">
+      <div class="dot"></div>
+      <div style="flex:1">🗣️ teks bisa diganti versi jj</div>
+    </div>
+
+    <div class="phone" id="phone-area">
+      <!-- reactions bar -->
+      <div class="reactions" aria-hidden="true">
+        <div class="emoji">👍</div>
+        <div class="emoji">❤️</div>
+        <div class="emoji">😂</div>
+        <div class="emoji">😮</div>
+        <div class="emoji">😢</div>
+        <div class="emoji">🙏</div>
+        <div class="emoji">😏</div>
+        <div style="width:10px"></div>
+      </div>
+
+      <div class="message-row" style="position:relative;">
+        <div class="avatar"></div>
+
+        <div class="bubble" id="bubble">
+          <div class="drag-handle" id="drag-handle" title="Seret untuk memindahkan">≡</div>
+          <div id="editable" class="editable" contenteditable="true" spellcheck="false" aria-label="Edit teks pesan">
+Teks
+Isi sendiri.
+          </div>
+
+          <div class="time">11.05</div>
+        </div>
+      </div>
+
+      <!-- fake menu (long press) -->
+      <div class="menu" id="menu">
+        <div class="opt"><div>Balas</div><div class="icon">↩️</div></div>
+        <div class="opt"><div>Teruskan</div><div class="icon">➡️</div></div>
+        <div class="opt"><div>Salin</div><div class="icon">📋</div></div>
+        <div class="opt"><div>Beri bintang</div><div class="icon">⭐</div></div>
+        <div class="opt"><div>Sematkan</div><div class="icon">📌</div></div>
+      </div>
+
+    </div>
+
+    <div class="controls">
+      <div class="slider-wrap">
+        <label for="fontRange">Ukuran</label>
+        <input id="fontRange" type="range" min="12" max="30" value="20" />
+        <span id="fontVal">20px</span>
+      </div>
+
+      <button class="btn" id="resetBtn">Reset Posisi</button>
+      <button class="btn primary" id="downloadBtn">Unduh</button>
+    </div>
+
+    <div class="footer">
+      <div>Drag teks untuk pindah • Teks bisa dibuang/diubah</div>
+      <div style="opacity:0.8">Simulasi WhatsApp iPhone</div>
+    </div>
+  </div>
+
+  <div class="ios-notify" id="iosNotify">Mohon Teks Diganti Dahulu</div>
+
+  <script>
+    (function(){
+      const editable = document.getElementById('editable');
+      const fontRange = document.getElementById('fontRange');
+      const fontVal = document.getElementById('fontVal');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const iosNotify = document.getElementById('iosNotify');
+      const bubble = document.getElementById('bubble');
+      const dragHandle = document.getElementById('drag-handle');
+      const resetBtn = document.getElementById('resetBtn');
+      const phoneArea = document.getElementById('phone-area');
+
+      // store original text to compare
+      const ORIGINAL_TEXT = normalizeNewlines(editable.innerText.trim());
+
+      // initialize font size
+      fontVal.textContent = fontRange.value + 'px';
+      editable.style.fontSize = fontRange.value + 'px';
+
+      // auto-fit function: shrink font until content fits (max attempts)
+      function autoFit(){
+        const maxH = 220; // same as css max-height
+        let fs = parseInt(window.getComputedStyle(editable).fontSize);
+        let tries = 0;
+        while(editable.scrollHeight > maxH && tries < 8 && fs > 10){
+          fs = Math.max(10, fs - 2);
+          editable.style.fontSize = fs + 'px';
+          fontRange.value = fs;
+          fontVal.textContent = fs + 'px';
+          tries++;
+        }
+      }
+
+      // when user types, check auto fit
+      editable.addEventListener('input', function(){
+        // if user increases content, possibly shrink
+        autoFit();
+      });
+
+      // font slider
+      fontRange.addEventListener('input', function(){
+        editable.style.fontSize = fontRange.value + 'px';
+        fontVal.textContent = fontRange.value + 'px';
+      });
+
+      // normalize helper
+      function normalizeNewlines(s){
+        return s.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim();
+      }
+
+      // show iOS-like notify
+      let notifyTimer = null;
+      function showNotify(msg = 'Mohon Teks Diganti Dahulu'){
+        iosNotify.textContent = msg;
+        iosNotify.classList.add('show');
+        clearTimeout(notifyTimer);
+        notifyTimer = setTimeout(()=> iosNotify.classList.remove('show'), 2200);
+      }
+
+      // download logic
+      downloadBtn.addEventListener('click', function(){
+        const current = normalizeNewlines(editable.innerText);
+        if(current === ORIGINAL_TEXT){
+          showNotify('Mohon Teks Diganti Dahulu');
+          return;
+        }
+
+        // create screenshot of phone area
+        // temporarily set background white? We'll keep original look.
+        html2canvas(phoneArea, { scale: 2, useCORS: true, backgroundColor: null }).then(canvas => {
+          // create link
+          canvas.toBlob(function(blob){
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'screenshot-whatsapp.png';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          }, 'image/png');
+        }).catch(err => {
+          console.error(err);
+          showNotify('Gagal membuat screenshot');
+        });
+      });
+
+      // draggable text box within bubble
+      let dragging = false;
+      let startX=0, startY=0, origX=0, origY=0;
+      // track position with translate
+      let tx = 0, ty = 0;
+      // ensure bubble is positioned relative
+      bubble.style.position = 'relative';
+      editable.style.position = 'relative';
+
+      dragHandle.addEventListener('pointerdown', (e) => {
+        dragging = true;
+        dragHandle.setPointerCapture(e.pointerId);
+        startX = e.clientX;
+        startY = e.clientY;
+        origX = tx; origY = ty;
+        dragHandle.style.cursor = 'grabbing';
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if(!dragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        tx = origX + dx;
+        ty = origY + dy;
+
+        // keep text within bubble bounds
+        const bubRect = bubble.getBoundingClientRect();
+        // compute allowed ranges using sizes
+        const editRect = editable.getBoundingClientRect();
+        // relative positions: ensure editable stays within bubble
+        const minX = - (editRect.left - bubRect.left) - 12; // left padding
+        const maxX = bubRect.width - editRect.width - 20;
+        const minY = - (editRect.top - bubRect.top) - 6;
+        const maxY = bubRect.height - editRect.height - 24;
+
+        // if editRect width > bubble, allow x=0 only
+        if(editRect.width > bubRect.width - 24) {
+          tx = 0;
+        } else {
+          tx = Math.max(minX, Math.min(maxX, tx));
+        }
+        ty = Math.max(minY, Math.min(maxY, ty));
+
+        editable.style.transform = `translate(${tx}px, ${ty}px)`;
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if(dragging){
+          dragging=false;
+          dragHandle.style.cursor = 'grab';
+        }
+      });
+
+      // reset position
+      resetBtn.addEventListener('click', function(){
+        tx = 0; ty = 0;
+        editable.style.transform = 'translate(0,0)';
+        editable.style.fontSize = '20px';
+        fontRange.value = 20;
+        fontVal.textContent = '20px';
+      });
+
+      // keyboard accessibility: when tabbing into editable, place caret at end
+      editable.addEventListener('focus', function(){
+        placeCaretAtEnd(editable);
+      });
+
+      function placeCaretAtEnd(el) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+
+      // small helper: when double-click menu option 'Salin' mimic copy
+      document.querySelectorAll('.menu .opt').forEach(opt=>{
+        opt.addEventListener('click', ()=>{
+          const txt = opt.textContent.trim();
+          if(txt === 'Salin'){
+            navigator.clipboard?.writeText(editable.innerText).then(()=> {
+              showNotify('Teks disalin ke clipboard');
+            }).catch(()=> showNotify('Gagal menyalin'));
+          }
+        });
+      });
+
+      // initial auto fit in case default is long
+      autoFit();
+
+      // for mobile, allow touch to move caret properly
+      editable.addEventListener('touchstart', function(e){ 
+        // do nothing special; leave editable.
+      });
+
+      // small usability: pressing Enter adds newline (contenteditable handles)
+      // done.
+    })();
+  </script>
+</body>
+</html>
